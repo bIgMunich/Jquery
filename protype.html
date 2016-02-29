@@ -1,0 +1,270 @@
+<input id="btnTest" type="button" value=" id1" />
+<input class="class1" type="button" value=" class1" />
+<input class="class1" type="button" value=" repeatClass1" />
+<input class="class2" type="button" value=" class2" />
+<input id="btnTest1" type="button" value=" repeatId1" />
+<div class="new" id="div1">
+    <ul id="ul1">
+        <li id="我是li1">我是li1</li>
+        <li id="我是li2">我是li2</li>
+        <li id="我是li3并且有样式" class="dd">我是li3</li>
+    </ul>
+    <ul id="ul2">
+        <li id="我是li4">我是li4</li>
+        <li id="我是li5">我是li5</li>
+        <li id="我是li6">我是li6</li>
+    </ul>
+</div>
+
+<div class="new" id="div2">
+    <ul id="ul3">
+        <li id="我是li21并且有样式"><a id="a1" class="dd ">a1</a></li>
+        <li id="我是li32"><a id="a2">a2</a></li>
+        <li id="我是li34"><a id="a3">a3</a></li>
+    </ul>
+    <ul id="ul4">
+        <li id="我是li35"><a id="a4">a4</a></li>
+        <li id="我是li36并且有样式"><a id="a5" class="dd">a5</a></li>
+        <li id="我是li37"><a id="a6">a6</a></li>
+    </ul>
+</div>
+<script type="text/javascript">
+    (function (window) {
+        var suppost = {}; //这个明明空间下存放公用帮助方法
+        var classSelector = /^\.[0-9A-Za-z_]+$/;
+        var idSelector = /^#[0-9A-Za-z]+$/;
+        //根据样式获取dom元素
+        suppost.getElementByClassNames = function (oLists, className) {
+            var oListArray = [];
+            if (oLists.length > 0) {
+                for (var i = 0; i < oLists.length; i++) {
+                    if (oLists[i].className.trim() === className) {
+                        oListArray.push(oLists[i]);
+                    }
+                }
+            } else if (oLists == "") {
+                var oListsAll = document.getElementsByTagName('*');
+                for (var i = 0; i < oListsAll.length; i++) {
+                    if (oListsAll[i].className.trim() === className) {
+                        oListArray.push(oListsAll[i]);
+                    }
+                }
+            } else {
+                if (oLists.className.trim() === className) {
+                    oListArray.push(oLists);
+                }
+            }
+            return oListArray;
+        }
+
+        suppost.isElementByClassName = function (obj, className) {
+            if (obj.className === className) {
+                return obj;
+            }
+        }
+
+        //根据多种标签实现选择 比如 ul li
+        suppost.getElementByMoreTagName = function (attrArray) {
+            var domNewResult = [];//新的数据（循环之后）
+            var domOldResult = [];//旧的数据（循环之前的）
+            var domFinalResult = [];//返回最终的dom列表
+            if (attrArray.length === 1) {
+                var resultStr = attrArray[0].trim();
+                if (idSelector.test(resultStr)) {
+                    this.concatElementByTagName(domFinalResult, document.getElementById(resultStr.substring(1))); //_m("#id");
+                } else if (classSelector.test(resultStr)) {
+                    this.concatElementByTagName(domFinalResult, suppost.getElementByClassNames("", resultStr.substring(1))); //_m(".class");
+                } else {
+                    this.concatElementByTagName(domFinalResult, document.getElementsByTagName(resultStr)); //_m("p");
+                }
+            } else {
+                for (var i = 0; i < attrArray.length; i++) {     //多个标签----div ul li
+                    if (i === 0) {//发现第一个标签的时候，立即push进domNewResult
+                        this.concatElementByTagName(domNewResult, document.getElementsByTagName(attrArray[i]));
+                    } else if (i === attrArray.length - 1) {//如果是最后一个标签，返回结果
+                        if (domNewResult.length > 0) {//domNewResult不为空
+                            for (var j = 0; j < domNewResult.length; j++) {//push 进domFinalResult
+                                if (attrArray[i].trim().indexOf(".") === 0) { //如果是class
+                                    this.concatElementByTagName(domFinalResult, suppost.getElementByClassNames(domNewResult[j], attrArray[i].trim().substring(1)));
+                                } else {
+                                    this.concatElementByTagName(domFinalResult, domNewResult[j].getElementsByTagName(attrArray[i]));
+                                }
+                            }
+                        }
+                    } else if (i > 0 && i < attrArray.length - 1) {//如果不是最后一个标签，开始循环
+                        domOldResult = domNewResult.slice();//将上次的标签列表赋值给domOldResult
+                        domNewResult.splice(0, domNewResult.length);//将domNewResult清空
+                        if (domOldResult.length > 0) {//如果domOldResult不为空
+                            for (var k = 0; k < domOldResult.length; k++) { //开始循环第n个标签
+                                var domOldStr = attrArray[i].trim();
+                                if (idSelector.test(domOldStr)) {
+                                    this.concatElementByTagName(domFinalResult, document.getElementById(domOldStr.substring(1))); //_m("#id");
+                                } else if (classSelector.test(domOldStr)) {
+                                    this.concatElementByTagName(domFinalResult, suppost.getElementByClassNames(domNewResult[k], attrArray[i]).trim().substring(1));
+                                } else {
+                                    this.concatElementByTagName(domNewResult, domOldResult[k].getElementsByTagName(attrArray[i])); //如果发现，立即push进domNewResult
+                                }
+                                if (attrArray[i].trim().indexOf(".") === 0) { //如果是class
+                                    this.concatElementByTagName(domNewResult, suppost.getElementByClassNames(domNewResult[k], attrArray[i].trim().substring(1)));
+                                } else {
+                                    this.concatElementByTagName(domNewResult, domOldResult[k].getElementsByTagName(attrArray[i])); //如果发现，立即push进domNewResult
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return domFinalResult;
+        }
+
+        //注册时间
+        suppost.addClickEven = function (obj, type, fn) {
+            if (window.addEventListener) {
+                obj.addEventListener(type, fn);
+            } else if (window.attachEvent) {
+                obj.attachEvent("on" + type, fn);
+            }
+        }
+
+        suppost.isArray = function (o) {
+            return Object.prototype.toString.call(o) === '[object Array]';
+        }
+
+        suppost.concatElementByTagName = function (result, domList) {
+            if (domList.length > 0) {
+                for (var i = 0; i < domList.length; i++) {
+                    result.push(domList[i]);
+                }
+            } else {
+                result.push(domList);
+            }
+        }
+
+        function _m(arguments) {
+            this.dom = [];
+            if (typeof arguments[0] != 'string') {//如果是dom对象，立刻执行
+                this.dom = arguments[0];
+            } else {
+                var strArgu = arguments[0].trim();
+                var spiltRegex = /\s+/g;
+                var attrArray = [];
+                if (strArgu.match(spiltRegex) == null) {
+                    attrArray.push(strArgu);
+                } else {
+                    attrArray = strArgu.split(spiltRegex);
+                }
+                this.dom = suppost.getElementByMoreTagName(attrArray);
+            }
+        }
+
+        //这个方法的实现
+        _m.prototype = {
+            constructor: _m,
+            on: function (type, fn) {
+                if (!suppost.isArray(this.dom)) {
+                    suppost.addClickEven(this.dom, type, fn);
+                } else {
+                    if (this.dom.length > 0) {
+                        for (var i = 0; i < this.dom.length; i++) {
+                            suppost.addClickEven(this.dom[i], type, fn);
+                        }
+                    }
+                }
+                return this;
+            },
+            css: function (styleName, styleValue) {
+                if (this.dom.length > 0) {
+                    for (var i = 0; i < this.dom.length; i++) {
+                        this.dom[i].style[styleName] = styleValue;
+                    }
+                } else {
+                    this.dom.style[styleName] = styleValue;
+                }
+                return this;
+            },
+            addClass: function (className) {
+                var regionClass = this.dom.className;
+                var blankStr = "";
+                if (regionClass != "") {
+                    blankStr = " ";
+                }
+                this.dom.className = regionClass + blankStr + className;
+                return this;
+            },
+            removeClass: function (className) {
+                var regionClass = this.dom.className;
+                var resultClass = regionClass.replace(className, "");
+                this.dom.className = resultClass;
+                return this;
+            }
+        }
+
+        window.$ = _m;
+        _m.onReady = function (fn) {
+            window.$ = function () {
+                return new _m(arguments);
+            }
+            fn();
+
+        }
+    })(window);
+
+
+    $.onReady(function () {
+        //$("#btnTest").on("click", function () {
+        //    alert("我被点击了");
+        //});
+
+        //$(".class1").on("click", function () {
+        //    alert("我是样式1");
+        //});
+        //$(".class2").on("click", function () {
+        //    alert("我是样式2");
+        //});
+        //$("#btnTest1").on("click", function () {
+        //    alert("我是id1");
+        //});
+        //$("div").on("click", function () {
+        //    alert(this.getAttribute("id"));
+        //});
+        $(" ul  li").on("click", function () {
+            var self = this;
+            alert(self.getAttribute("id"));
+            //self.call(addClass, 'new1',);
+            $(self).css("color", "red");
+        });
+
+
+        //$("ul li a .dd").on("click", function () {
+        //    var self = this;
+        //    alert(self.getAttribute("id"));
+        //});
+
+    });
+</script>
+<a></a>
+<style type="text/css">
+    .new {
+        width: 500px;
+        height: 200px;
+        color: #000000;
+        border: 1px solid red;
+        background-color: #ffffff;
+    }
+        .new1 {
+        width: 100px;
+        height: 100px;
+        color: yellow;
+        border: 1px solid red;
+        background-color: #ffffff;
+    }
+</style>
+
+
+<!--<script>
+    var patten = /^\.[0-9A-Za-z_]+$/;
+    var str = ".btnTest";
+    if (patten.test(str)) {
+        alert("合法");
+    }
+</script>-->
